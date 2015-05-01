@@ -1,6 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using System;
 
 namespace Game2
 {
@@ -11,6 +12,10 @@ namespace Game2
     {
         GraphicsDeviceManager graphics;
         SpriteBatch spriteBatch;
+
+        LaSilEngine engine;
+        SpriteFont font;
+        Random rand = new Random();
 
         public Game1()
             : base()
@@ -40,8 +45,11 @@ namespace Game2
         {
             // Create a new SpriteBatch, which can be used to draw textures.
             spriteBatch = new SpriteBatch(GraphicsDevice);
-            LaSilEngine lasilEngine = new LaSilEngine();
+            engine = new LaSilEngine(rand,new Vector2(1,1));
+            engine.LoadMap();
             // TODO: use this.Content to load your game content here
+            font = Content.Load<SpriteFont>("Arial24");
+            //map = new Map(rand);
         }
 
         /// <summary>
@@ -64,6 +72,7 @@ namespace Game2
                 Exit();
 
             // TODO: Add your update logic here
+            engine.Update(gameTime, Keyboard.GetState());
 
             base.Update(gameTime);
         }
@@ -77,7 +86,11 @@ namespace Game2
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
             // TODO: Add your drawing code here
+            spriteBatch.Begin();
 
+            engine.Draw(spriteBatch, font);
+
+            spriteBatch.End();
             base.Draw(gameTime);
         }
     }
