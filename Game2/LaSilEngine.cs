@@ -12,19 +12,14 @@ namespace Game2
     {
         List<GameObject> gameObjects;
         Map map;
-        Vector2 position;
-        public enum Direction { North, East, South, West};
-        private int directionCount = Enum.GetNames(typeof(Direction)).Length;
-        Direction direction;
         Random rand;
         Boolean startRotatingRight, startRotatingLeft, startMovingForward, startMovingBackward = false;
+        Camera camera;
 
-        public LaSilEngine(Random rand, Vector2 pos)
+        public LaSilEngine(Random rand)
             : base()
         {
             gameObjects = new List<GameObject>();
-            position = pos;
-            direction = Direction.North;
             this.rand = rand;
         }
         public void LoadMap()
@@ -35,8 +30,11 @@ namespace Game2
         {
             gameObjects.Add(newObject);
         }
-        public void AddCamera()
-        { }
+        public void AddCamera(Vector2 pos)
+        {
+            camera = new Camera(pos, LaSilEngineConstants.Direction.North, LaSilEngineConstants.MAP_X_SIZE,
+                LaSilEngineConstants.MAP_Y_SIZE);
+        }
         public void Update(GameTime gameTime, KeyboardState keyboardState)
         {
             foreach (GameObject gameObject in gameObjects)
@@ -56,97 +54,22 @@ namespace Game2
             if (keyboardState.IsKeyUp(Keys.Right) && startRotatingRight)
             {
                 startRotatingRight = false;
-                direction++;
-                if ((int)direction >= directionCount)
-                { direction = (Direction)0; }
+                camera.Turn(true);
             }
             if (keyboardState.IsKeyUp(Keys.Left) && startRotatingLeft)
             {
                 startRotatingLeft = false;
-                direction--;
-                if ((int)direction < 0)
-                { direction = (Direction)(directionCount-1); }
+                camera.Turn(false);
             }
             if (keyboardState.IsKeyUp(Keys.Up) && startMovingForward)
             {
                 startMovingForward = false;
-                // if direction east/west
-                switch (direction){
-                    case Direction.North:
-                        {
-                            if (position.Y > 0)
-                            {
-                                position.Y--;
-                            }
-                            break;
-                        }
-                    case Direction.East:
-                        {
-                            if (position.X < (map.x - 1))
-                            {
-                                position.X++;
-                            }
-                            break;
-                        }
-                    case Direction.South:
-                        {
-                            if (position.Y < (map.y - 1))
-                            {
-                                position.Y++;
-                            }
-                            break;
-                        }
-                    case Direction.West:
-                        {
-                            if (position.X > 0)
-                            {
-                                position.X--;
-                            }
-                            break; 
-                        }
-                }
-                
-                
-                
+                camera.Move(1);
             }
             if (keyboardState.IsKeyUp(Keys.Down) && startMovingBackward)
             { 
                 startMovingBackward = false;
-                switch (direction)
-                {
-                    case Direction.South:
-                        {
-                            if (position.Y > 0)
-                            {
-                                position.Y--;
-                            }
-                            break;
-                        }
-                    case Direction.West:
-                        {
-                            if (position.X < (map.x - 1))
-                            {
-                                position.X++;
-                            }
-                            break;
-                        }
-                    case Direction.North:
-                        {
-                            if (position.Y < (map.y - 1))
-                            {
-                                position.Y++;
-                            }
-                            break;
-                        }
-                    case Direction.East:
-                        {
-                            if (position.X > 0)
-                            {
-                                position.X--;
-                            }
-                            break;
-                        }
-                }
+                camera.Move(-1);
             }
         }
         public void Draw(SpriteBatch spriteBatch, SpriteFont font)
@@ -159,10 +82,11 @@ namespace Game2
             // рисуем карту
             map.Draw(spriteBatch, font, 10, 10, 400, 400);
             // рисуем камеру и направление
-            Vector2 cameraPosition = map.GetCellCenter((int)position.X,(int)position.Y,400,400);
-            spriteBatch.DrawString(font, "" + (int)direction, cameraPosition, Color.Red);
+            Vector2 cameraPosition = camera.Position;
+            Vector2 cameraMapPosition = map.GetCellCenter((int)cameraPosition.X, (int)cameraPosition.Y, 400, 400);
+            spriteBatch.DrawString(font, "" + (int)camera.Direction, cameraMapPosition, Color.Red);
             //рисуем, что видим
-            spriteBatch.DrawString(font, "" + (int)map.GetCellSide((int)position.X, (int)position.Y,direction), new Vector2(500, 200), Color.Silver);
+            spriteBatch.DrawString(font, "" + (int)map.GetCellSide((int)cameraPosition.X, (int)cameraPosition.Y, camera.Direction), new Vector2(500, 200), Color.Silver);
         }
         private Vector2 GetRandomLocation()
         {
@@ -195,7 +119,7 @@ namespace Game2
         private MapCell[,] map;
         private Random rand;
         private const int margin = 20;
-        public int x = 3, y = 3;
+        public int x = LaSilEngineConstants.MAP_X_SIZE, y = LaSilEngineConstants.MAP_Y_SIZE;
         public Map(Random rand):base()
         {
             this.rand = rand;
@@ -224,7 +148,7 @@ namespace Game2
             int cellHeight = (height - margin * map.GetLength(1)) / map.GetLength(1);
             return new Vector2((cellWidth+margin)/2+x*(cellWidth+margin), (cellHeight+margin)/2+y*(cellHeight+margin));
         }
-        public Border.BorderTypes GetCellSide(int x, int y, LaSilEngine.Direction side)
+        public Border.BorderTypes GetCellSide(int x, int y, LaSilEngineConstants.Direction side)
         {
             MapCell cell = map[x, y];
             return cell.GetSide(side);
@@ -309,27 +233,27 @@ namespace Game2
             south = GetRandomBorderType();
             
         }
-        public BorderTypes GetSide(LaSilEngine.Direction side)
+        public BorderTypes GetSide(LaSilEngineConstants.Direction side)
         {
             BorderTypes res=BorderTypes.Free;
             switch (side)
             {
-                case LaSilEngine.Direction.East:
+                case LaSilEngineConstants.Direction.East:
                     {
                         res= east;
                         break;
                     }
-                case LaSilEngine.Direction.North:
+                case LaSilEngineConstants.Direction.North:
                     {
                         res= north;
                         break;
                     }
-                case LaSilEngine.Direction.South:
+                case LaSilEngineConstants.Direction.South:
                     {
                         res= south;
                         break;
                     }
-                case LaSilEngine.Direction.West:
+                case LaSilEngineConstants.Direction.West:
                     {
                         res= west;
                         break;

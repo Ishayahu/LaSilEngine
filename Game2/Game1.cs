@@ -45,8 +45,9 @@ namespace Game2
         {
             // Create a new SpriteBatch, which can be used to draw textures.
             spriteBatch = new SpriteBatch(GraphicsDevice);
-            engine = new LaSilEngine(rand,new Vector2(1,1));
+            engine = new LaSilEngine(rand);
             engine.LoadMap();
+            engine.AddCamera(new Vector2(2, 0));
             // TODO: use this.Content to load your game content here
             font = Content.Load<SpriteFont>("Arial24");
             //map = new Map(rand);
