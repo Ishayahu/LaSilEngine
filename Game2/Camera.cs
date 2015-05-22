@@ -93,9 +93,10 @@ namespace Game2
         /// Перемещение камеры вперёд/назад
         /// </summary>
         /// <param name="steps">Насколько передвинуть камеру. + - вперёд, - - назад</param>
-        public void Move(int steps)
+        public void Move(int steps, Map map)
         {
             int newpos;
+            Vector2 oldpos = pos;
             switch (direction)
             {
                 case LaSilEngineConstants.Direction.North:
@@ -134,6 +135,11 @@ namespace Game2
                         }
                         break;
                     }
+            }
+            // Если пройти нельзя
+            if (map.IsTraversal(oldpos,pos,this)<0)
+            {
+                pos = oldpos;
             }
         }
         /// <summary>

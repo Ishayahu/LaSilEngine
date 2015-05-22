@@ -16,12 +16,15 @@ namespace Game2
         LaSilEngine engine;
         SpriteFont font;
         Random rand = new Random();
+        
+        
 
         public Game1()
             : base()
         {
             graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
+            this.IsMouseVisible = true;
         }
 
         /// <summary>

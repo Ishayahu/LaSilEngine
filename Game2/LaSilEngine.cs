@@ -10,18 +10,27 @@ namespace Game2
 {
     public class LaSilEngine
     {
+        #region fields
         List<GameObject> gameObjects;
         Map map;
         Random rand;
         Boolean startRotatingRight, startRotatingLeft, startMovingForward, startMovingBackward = false;
         Camera camera;
 
+        // для рисования поля обзора
+        private int cellsToEnd;
+        private string[] directionsChars = { "N", "E", "S", "W" };
+        #endregion fields
+
+        #region constructor
         public LaSilEngine(Random rand)
-            : base()
         {
             gameObjects = new List<GameObject>();
             this.rand = rand;
         }
+        #endregion
+
+        #region methods
         public void LoadMap()
         {
             map = new Map(rand);
@@ -64,12 +73,12 @@ namespace Game2
             if (keyboardState.IsKeyUp(Keys.Up) && startMovingForward)
             {
                 startMovingForward = false;
-                camera.Move(1);
+                camera.Move(1, map);
             }
             if (keyboardState.IsKeyUp(Keys.Down) && startMovingBackward)
             { 
                 startMovingBackward = false;
-                camera.Move(-1);
+                camera.Move(-1, map);
             }
         }
         public void Draw(SpriteBatch spriteBatch, SpriteFont font)
@@ -84,200 +93,76 @@ namespace Game2
             // рисуем камеру и направление
             Vector2 cameraPosition = camera.Position;
             Vector2 cameraMapPosition = map.GetCellCenter((int)cameraPosition.X, (int)cameraPosition.Y, 400, 400);
-            spriteBatch.DrawString(font, "" + (int)camera.Direction, cameraMapPosition, Color.Red);
+            
+            spriteBatch.DrawString(font, "" + directionsChars[(int)camera.Direction], cameraMapPosition, Color.Red);
             //рисуем, что видим
-            spriteBatch.DrawString(font, "" + (int)map.GetCellSide((int)cameraPosition.X, (int)cameraPosition.Y, camera.Direction), new Vector2(500, 200), Color.Silver);
+
+            //рассчитываем, что видим, проходясь по всем клеткам в направлении обзора
+            //пока без учёта освещённости
+
+            // считаем, сколько клеток осталось
+            switch (camera.Direction)
+            {
+                case LaSilEngineConstants.Direction.North:
+                    {
+                        cellsToEnd = (int)camera.Position.Y + 1;
+                        break;
+                    }
+                case LaSilEngineConstants.Direction.South:
+                    {
+                        cellsToEnd = map.Y - (int)camera.Position.Y;
+                        break;
+                    }
+                case LaSilEngineConstants.Direction.West:
+                    {
+                        cellsToEnd = (int)camera.Position.X + 1;
+                        break;
+                    }
+                case LaSilEngineConstants.Direction.East:
+                    {
+                        cellsToEnd = map.X - (int)camera.Position.X;
+                        break;
+                    }
+                default:
+                    {
+                        cellsToEnd = -1;
+                        break;
+                    }
+            }
+            
+            spriteBatch.DrawString(font, ""+cellsToEnd, new Vector2(500, 200), Color.Silver);
         }
         private Vector2 GetRandomLocation()
         {
             return Vector2.Zero;
         }
+        #endregion methods
     }
 
 
     public class GameObject
     {
+        #region constructor
         public GameObject(): base()
         {
 
         }
+        #endregion 
+
+        #region methods
         public void Update(GameTime gameTime)
         {}
         public void Draw(SpriteBatch spriteBatch)
-        {}
-    }
-
-
-
-
-
-    /// <summary>
-    /// Класс, отвечающий за хранение и работу с картой
-    /// </summary>
-    public class Map
-    {
-        private MapCell[,] map;
-        private Random rand;
-        private const int margin = 20;
-        public int x = LaSilEngineConstants.MAP_X_SIZE, y = LaSilEngineConstants.MAP_Y_SIZE;
-        public Map(Random rand):base()
-        {
-            this.rand = rand;
-            map = new MapCell[x,y];
-            for (int dx=0; dx<3;dx++)
-            {
-                for (int dy = 0; dy<3;dy++)
-                {
-                    map[dx, dy] = new MapCell(rand);
-                }
-            }
-        }
-        public void LoadMap()
         { }
-        /// <summary>
-        /// Возвращает клеткy карты:
-        /// </summary>
-        /// <returns></returns>
-        public Vector2 GetCellCenter(int x, int y, int width, int height)
-        {
-            if (x >= map.GetLength(0) || y >= map.GetLength(1) || x<0 || y<0)
-            {
-                throw new MapCellException("Cell index out of range!");
-            }
-            int cellWidth = (width - margin * map.GetLength(0)) / map.GetLength(0);
-            int cellHeight = (height - margin * map.GetLength(1)) / map.GetLength(1);
-            return new Vector2((cellWidth+margin)/2+x*(cellWidth+margin), (cellHeight+margin)/2+y*(cellHeight+margin));
-        }
-        public Border.BorderTypes GetCellSide(int x, int y, LaSilEngineConstants.Direction side)
-        {
-            MapCell cell = map[x, y];
-            return cell.GetSide(side);
-        }
-        /// <summary>
-        /// Рисует карту
-        /// </summary>
-        /// <param name="spriteBatch"></param>
-        /// <param name="font"></param>
-        /// <param name="x">верхний левый угол - х</param>
-        /// <param name="y">верхний левый угол - у</param>
-        /// <param name="width">ширина</param>
-        /// <param name="height">высота</param>
-        public void Draw(SpriteBatch spriteBatch, SpriteFont font, int x, int y, int width, int height)
-        {
-            //Draw(SpriteBatch spriteBatch, SpriteFont font, int x, int y, int width, int height)
-            int cellWidth = (width - margin * map.GetLength(0)) / map.GetLength(0);
-            int cellHeight = (height - margin * map.GetLength(1)) / map.GetLength(1);
-            for (int xCell = 0; xCell < map.GetLength(0); xCell++)
-            {
-                for (int yCell = 0; yCell < map.GetLength(1); yCell++)
-                {
-                    map[xCell, yCell].Draw(spriteBatch, font, x + (cellWidth+margin) * xCell, y + (cellHeight+margin) * yCell, cellWidth, cellHeight);
-                }
-            }
-        }
-
-        public class MapCellException : Exception
-        {
-            public MapCellException()
-            {
-            }
-
-            public MapCellException(string message)
-                : base(message)
-            {
-            }
-
-            public MapCellException(string message, Exception inner)
-                : base(message, inner)
-            {
-            }
-        }
+        #endregion
     }
-    
-    public class Border
-    {
-        public Border(Random rand)
-            : base()
-        {
-            this.rand = rand;
-        }
-        public enum BorderTypes { Free, Wal, Trees, Water };
-        public Random rand;
-        public BorderTypes GetRandomBorderType()
-        {
 
-            int typeNumber = rand.Next(Enum.GetNames(typeof(BorderTypes)).Length);
-            return (BorderTypes)typeNumber;
-        }
-    }
+
+
+
 
     
 
-    public class MapCell : Border
-    {
-        BorderTypes east, west, north, south;
-        public MapCell(Random rand, BorderTypes east, BorderTypes west, BorderTypes north, BorderTypes south)
-            : base(rand)
-        {
-            this.east = east;
-            this.west = west;
-            this.north = north;
-            this.south = south;
-        }
-        public MapCell(Random rand):base(rand)
-        {
-
-            east = GetRandomBorderType();
-            west = GetRandomBorderType();
-            north = GetRandomBorderType();
-            south = GetRandomBorderType();
-            
-        }
-        public BorderTypes GetSide(LaSilEngineConstants.Direction side)
-        {
-            BorderTypes res=BorderTypes.Free;
-            switch (side)
-            {
-                case LaSilEngineConstants.Direction.East:
-                    {
-                        res= east;
-                        break;
-                    }
-                case LaSilEngineConstants.Direction.North:
-                    {
-                        res= north;
-                        break;
-                    }
-                case LaSilEngineConstants.Direction.South:
-                    {
-                        res= south;
-                        break;
-                    }
-                case LaSilEngineConstants.Direction.West:
-                    {
-                        res= west;
-                        break;
-                    }
-            }
-            return res;
-        }
-        
-        /// <summary>
-        /// Рисует клетку карты
-        /// </summary>
-        /// <param name="spriteBatch"></param>
-        /// <param name="x">верхний левый угол - x</param>
-        /// <param name="y">верхний левый угол - y</param>
-        /// <param name="width">ширина ячейки</param>
-        /// <param name="height">высота ячейки</param>
-        public void Draw(SpriteBatch spriteBatch, SpriteFont font, int x, int y, int width, int height)
-        {
-            spriteBatch.DrawString(font, ""+(int)this.west, new Vector2(x, y+height/2), Color.White);
-            spriteBatch.DrawString(font, "" + (int)this.east, new Vector2(x+width, y + height / 2), Color.White);
-            spriteBatch.DrawString(font, "" + (int)this.north, new Vector2(x+width/2, y), Color.White);
-            spriteBatch.DrawString(font, "" + (int)this.south, new Vector2(x + width / 2, y+height), Color.White);
-        }
-    }
 
     
 }
