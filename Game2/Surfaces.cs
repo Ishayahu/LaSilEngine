@@ -132,7 +132,7 @@ namespace Game2
         public Mountine()
         {
             surfaceCode = "M";
-            visibility = 1F;
+            visibility = 5F;
         }
         #region methods
         override public int IsTraversal(Camera camera)

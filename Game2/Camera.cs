@@ -28,6 +28,7 @@ namespace Game2
         /// </summary>
         private LaSilEngineConstants.Direction direction;
         private int directionCount = Enum.GetNames(typeof(LaSilEngineConstants.Direction)).Length;
+        private float visibilityStrength;
 
         #endregion fields
 
@@ -52,6 +53,7 @@ namespace Game2
                 pos.X = 0;
                 pos.Y = 0;
             }
+            visibilityStrength = 1;
         }
         #endregion constructor
 
@@ -86,6 +88,11 @@ namespace Game2
                 direction = value;
             }
         }
+        public float VisibilityStrength
+        {
+            get { return visibilityStrength; }
+            set { visibilityStrength = value; }
+        }
         #endregion properties
 
         #region methods
@@ -93,7 +100,7 @@ namespace Game2
         /// Перемещение камеры вперёд/назад
         /// </summary>
         /// <param name="steps">Насколько передвинуть камеру. + - вперёд, - - назад</param>
-        public void Move(int steps, Map map)
+        public int Move(int steps, Map map)
         {
             int newpos;
             Vector2 oldpos = pos;
@@ -137,10 +144,13 @@ namespace Game2
                     }
             }
             // Если пройти нельзя
-            if (map.IsTraversal(oldpos,pos,this)<0)
+            int turnCount = map.IsTraversal(oldpos,pos,this);
+            if (turnCount<0)
             {
                 pos = oldpos;
+                return 0;
             }
+            return turnCount;
         }
         /// <summary>
         /// Повернуться

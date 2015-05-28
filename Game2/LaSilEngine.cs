@@ -16,9 +16,14 @@ namespace Game2
         Random rand;
         Boolean startRotatingRight, startRotatingLeft, startMovingForward, startMovingBackward = false;
         Camera camera;
+        long turnCount;
 
         // для рисования поля обзора
-        private int cellsToEnd;
+        private int cellsToEnd,tempCellsToEnd;
+        private float tempCameraCurrentVisibilityStrength;
+        private List<string> tempVisibleList = new List<string>();
+        private Vector2 tempPosition;
+
         private string[] directionsChars = { "N", "E", "S", "W" };
         #endregion fields
 
@@ -27,6 +32,7 @@ namespace Game2
         {
             gameObjects = new List<GameObject>();
             this.rand = rand;
+            turnCount = 0;
         }
         #endregion
 
@@ -34,6 +40,10 @@ namespace Game2
         public void LoadMap()
         {
             map = new Map(rand);
+            map.AddLightSource(new Vector2(0, 0), 1F);
+            map.AddLightSource(new Vector2(LaSilEngineConstants.MAP_X_SIZE-1, 0), 1F);
+            map.AddLightSource(new Vector2(0, LaSilEngineConstants.MAP_Y_SIZE-1), 2F);
+            map.AddLightSource(new Vector2(LaSilEngineConstants.MAP_X_SIZE-1, LaSilEngineConstants.MAP_Y_SIZE-1), 2F);
         }
         public void AddObject(GameObject newObject)
         {
@@ -43,7 +53,10 @@ namespace Game2
         {
             camera = new Camera(pos, LaSilEngineConstants.Direction.North, LaSilEngineConstants.MAP_X_SIZE,
                 LaSilEngineConstants.MAP_Y_SIZE);
+            camera.VisibilityStrength = 0;
         }
+        
+        
         public void Update(GameTime gameTime, KeyboardState keyboardState)
         {
             foreach (GameObject gameObject in gameObjects)
@@ -73,12 +86,12 @@ namespace Game2
             if (keyboardState.IsKeyUp(Keys.Up) && startMovingForward)
             {
                 startMovingForward = false;
-                camera.Move(1, map);
+                turnCount += camera.Move(1, map);
             }
             if (keyboardState.IsKeyUp(Keys.Down) && startMovingBackward)
             { 
                 startMovingBackward = false;
-                camera.Move(-1, map);
+                turnCount += camera.Move(-1, map);
             }
         }
         public void Draw(SpriteBatch spriteBatch, SpriteFont font)
@@ -101,6 +114,9 @@ namespace Game2
             //пока без учёта освещённости
 
             // считаем, сколько клеток осталось
+            tempVisibleList.Clear();
+            tempPosition = camera.Position;
+            tempCameraCurrentVisibilityStrength = camera.VisibilityStrength + map.GetLightSourceStrength(tempPosition);
             switch (camera.Direction)
             {
                 case LaSilEngineConstants.Direction.North:
@@ -129,8 +145,53 @@ namespace Game2
                         break;
                     }
             }
-            
-            spriteBatch.DrawString(font, ""+cellsToEnd, new Vector2(500, 200), Color.Silver);
+            tempCellsToEnd = cellsToEnd;
+            while (tempCameraCurrentVisibilityStrength > 0 && tempCellsToEnd > 0)
+            {
+                tempVisibleList.Add(map.GetCellChar((int)tempPosition.X, (int)tempPosition.Y));
+
+                if (cellsToEnd != tempCellsToEnd)
+                {
+                    tempCameraCurrentVisibilityStrength -= (map.VisibilityDecreasing(tempPosition) - map.GetLightSourceStrength(tempPosition));
+                }
+                else
+                {
+                    tempCameraCurrentVisibilityStrength -= (map.VisibilityDecreasing(tempPosition));
+                }
+                tempCellsToEnd--;
+                switch (camera.Direction)
+                {
+                    case LaSilEngineConstants.Direction.North:
+                        {
+                            tempPosition.Y--;
+                            break;
+                        }
+                    case LaSilEngineConstants.Direction.South:
+                        {
+                            tempPosition.Y++;
+                            break;
+                        }
+                    case LaSilEngineConstants.Direction.West:
+                        {
+                            tempPosition.X--;
+                            break;
+                        }
+                    case LaSilEngineConstants.Direction.East:
+                        {
+                            tempPosition.X++;
+                            break;
+                        }
+                }
+                
+                
+            }
+            // Считаем, что же мы видим
+            string visibileString = "";
+            foreach (string s in tempVisibleList)
+            {
+                visibileString += s;
+            }
+            spriteBatch.DrawString(font, "" + cellsToEnd + ";T:" + turnCount + ";V:" + visibileString, new Vector2(500, 200), Color.Silver);
         }
         private Vector2 GetRandomLocation()
         {

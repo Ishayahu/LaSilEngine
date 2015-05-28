@@ -14,7 +14,10 @@ namespace Game2
     public class Map
     {
         #region fields
+        //карта
         private MapCell[,] map;
+        // карта источников света
+        private LightSource[,] lightSourceMap;
         private Random rand;
         private const int margin = 20;
         private int x = LaSilEngineConstants.MAP_X_SIZE, y = LaSilEngineConstants.MAP_Y_SIZE;
@@ -30,17 +33,40 @@ namespace Game2
         {
             this.rand = rand;
             map = new MapCell[x, y];
-            for (int dx = 0; dx < 3; dx++)
+            lightSourceMap = new LightSource[x, y];
+            for (int dx = 0; dx < x; dx++)
             {
-                for (int dy = 0; dy < 3; dy++)
+                for (int dy = 0; dy < y; dy++)
                 {
                     map[dx, dy] = new MapCell(rand);
+                    // пока нет источников света
+                    lightSourceMap[dx, dy] = null;
                 }
             }
         }
         #endregion
 
         #region methods
+        /// <summary>
+        /// Добавляем источник света
+        /// </summary>
+        /// <param name="pos">координаты, Vector2</param>
+        /// <param name="strength">сила, float</param>
+        public void AddLightSource(Vector2 pos, float strength)
+        {
+            lightSourceMap[(int)pos.X, (int)pos.Y] = new LightSource(strength);
+        }
+        public float GetLightSourceStrength(Vector2 pos)
+        {
+            try
+            {
+                return lightSourceMap[(int)pos.X, (int)pos.Y].Strength;
+            }
+            catch (Exception e)
+            {
+                return 0F;
+            }
+        }
         public void LoadMap()
         { }
         /// <summary>
@@ -56,6 +82,14 @@ namespace Game2
             int cellWidth = (width - margin * map.GetLength(0)) / map.GetLength(0);
             int cellHeight = (height - margin * map.GetLength(1)) / map.GetLength(1);
             return new Vector2((cellWidth + margin) / 2 + x * (cellWidth + margin), (cellHeight + margin) / 2 + y * (cellHeight + margin));
+        }
+        public string GetCellChar(int x, int y)
+        {
+            if (x >= map.GetLength(0) || y >= map.GetLength(1) || x < 0 || y < 0)
+            {
+                throw new MapCellException("Cell index out of range!");
+            }
+            return map[x, y].Char;
         }
         public LaSilEngineConstants.BorderTypes GetCellSide(int x, int y, LaSilEngineConstants.Direction side)
         {
@@ -84,6 +118,14 @@ namespace Game2
                 }
             }
         }
+
+        /// <summary>
+        /// Можно ли пройти с одной клетки на другую и сколько это займёт ходов
+        /// </summary>
+        /// <param name="from">С какой клетки идём</param>
+        /// <param name="to">На какую клетку идём</param>
+        /// <param name="camera">Камера (игрок, например) (для учёта заклинаний)</param>
+        /// <returns>Количество затраченных ходов или -1, если пройти не возможно</returns>
         public int IsTraversal(Vector2 from, Vector2 to, Camera camera)
         {
             int dy = (int)(from.Y - to.Y);
@@ -106,6 +148,11 @@ namespace Game2
             }
             // Если какой-то странный результат
             return -1;
+        }
+
+        public float VisibilityDecreasing(Vector2 mapCellCoordinates)
+        {
+            return map[(int)mapCellCoordinates.X, (int)mapCellCoordinates.Y].Visibility;
         }
         #endregion
 
@@ -193,6 +240,14 @@ namespace Game2
         public Surface Surface
         {
             get { return this.surface; }
+        }
+        public float Visibility
+        {
+            get { return this.surface.Visibility; }
+        }
+        public string Char
+        {
+            get { return this.surface.SurfaceCode; }
         }
         #endregion
 

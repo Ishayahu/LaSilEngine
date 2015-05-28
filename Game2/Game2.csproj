@@ -60,6 +60,7 @@
     <Compile Include="Game1.cs" />
     <Compile Include="LaSilEngine.cs" />
     <Compile Include="LaSilEngineConstants.cs" />
+    <Compile Include="LightSource.cs" />
     <Compile Include="Map.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
